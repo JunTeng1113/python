@@ -15,7 +15,7 @@ def main():
     g = auth.AuthGooglemap(googlemaps_key)
 
     while True:
-        print('Warning！！本系統不支援跨縣市！！')
+        print('警告！！本系統不支援跨縣市！！')
         input_origins = input('我現在人在：')
         input_destinations = input('我想要到：')
         origins = getNearByStation(input_origins)
@@ -40,7 +40,7 @@ def main():
 def getNearByStation(address):
     location = g.get_geocode(address)
     params= {
-        '$top': 10, 
+        '$top': 20, 
         '$spatialFilter': f'nearby({location["lat"]}, {location["lng"]}, 500)', 
         '$format': 'JSON'
     }
@@ -49,16 +49,11 @@ def getNearByStation(address):
         data = json.loads(response.content)
         #points = [g.distancematrix(address, f"{i['StationPosition']['PositionLat']},{i['StationPosition']['PositionLon']}") for i in data]
         df = pd.DataFrame({
-            #'組站位ID': [i['StationGroupID'] for i in data],
+            '組站位ID': [i['StationGroupID'] if 'StationGroupID' in i else None for i in data], #有些縣市沒有提供組站位ID
             '站位ID': [i['StationID'] for i in data],
             '站牌名稱': [i['StationName']['Zh_tw'] for i in data],
             '行經路線': [[j['RouteName']['Zh_tw'] for j in i['Stops']] for i in data]
         })
-        #刪除重複站牌
-        # df = df.drop_duplicates(subset=None, 
-        #                     keep='first', 
-        #                     inplace=False, 
-        #                     ignore_index=True)
         return df
         
     else:
