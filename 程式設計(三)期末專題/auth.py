@@ -30,10 +30,9 @@ class AuthPTX():
             'x-date': format_date_time(mktime(datetime.now().timetuple())),
             'Accept - Encoding': 'gzip'
         }
-
-    def request(self, data, routeName, params, city=True):
-        ct = f'City/{self.city}/' if city else ''
-        url = f'https://ptx.transportdata.tw/MOTC/{self.version}/{self.vehicle}/{data}/{ct}{routeName}'
+        
+    def request(self, data, params):
+        url = f'https://ptx.transportdata.tw/MOTC/{self.version}/{self.vehicle}/{data}'
         response = request('GET', url, params=params, headers=self.get_auth_header())
         return response
 
