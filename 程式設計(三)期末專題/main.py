@@ -26,17 +26,41 @@ def main():
         result = list()
         for (index, key) in enumerate(destinations['行經路線']):
             for (i, k) in enumerate(origins['行經路線']):
-                if origins.get('組站位ID') is not None:
-                    route = f'{origins["組站位ID"][i]}, {destinations["組站位ID"][index]}'
+                try:
+                    # if origins["組站位ID"][i] is not None:
+                    #     route = f'{origins["組站位ID"][i]}, {destinations["組站位ID"][index]}'
 
-                else:
+                    # else:
+                    #     route = f'{origins["站牌名稱"][i]}, {destinations["站牌名稱"][index]}, {destinations["行經路線"][index]}'
                     route = f'{origins["站牌名稱"][i]}, {destinations["站牌名稱"][index]}, {destinations["行經路線"][index]}'
 
-                if (set(origins['行經路線'][i]) & set(destinations['行經路線'][index])) and (route not in routes):
-                    routes.add(route)
-                    result.append(f'你可以在 {origins["站位ID"][i]} {origins["站牌名稱"][i]} 搭乘下列公車路線到 {destinations["站牌名稱"][index]}\n' + \
-                        f'{", ".join(set(origins["行經路線"][i]) & set(destinations["行經路線"][index]))}')
-                    # getEstimatedTimeOfArrival(CITY, origins["站位ID"][i])
+                    if (set(origins['行經路線'][i]) & set(destinations['行經路線'][index])) and (route not in routes):
+                        routes.add(route)
+                        allowRoutesName = list(set(origins["行經路線"][i]) & set(destinations["行經路線"][index])) #允許搭乘的公車路線
+
+                        df = getEstimatedTimeOfArrival(CITY, origins["站位ID"][i])
+                        time = dict()
+                        for _index, row in df.iterrows():
+                            if row['RouteName'] in allowRoutesName:
+                                time[row['RouteName']] = dict()
+                                time[row['RouteName']]['預計到站時間'] = row['預計到站時間']
+                                time[row['RouteName']]['到站順序'] = row['StopSequence']
+                                
+                        allowRoutes = dict(zip(allowRoutesName, [time.get(_, 'Error') for _ in allowRoutesName]))
+                        
+                        '''--------------------
+                        | 刪除空車路線
+                        --------------------'''
+                        # for _key, _value in dict(allowRoutes).items():
+                        #     if _value is None:
+                        #         allowRoutes.pop(_key)
+                        result.append(f'你可以在 {origins["站位ID"][i]} {origins["站牌名稱"][i]} 搭乘下列公車路線到 {destinations["站牌名稱"][index]}\n' + \
+                            f'{allowRoutes}\n')
+                except:
+                    origins.to_csv('origins.csv', encoding='utf_8_sig')
+                    destinations.to_csv('destinations.csv', encoding='utf_8_sig')
+                    print('except')
+
         for i in result:
             print(i)
         print(('====================分隔線====================\n\n'))
@@ -54,11 +78,11 @@ def getNearByStation(address):
         data = json.loads(response.content)
         #points = [g.distancematrix(address, f"{i['StationPosition']['PositionLat']},{i['StationPosition']['PositionLon']}") for i in data]
         df = pd.DataFrame({
-            '組站位ID': [i['StationGroupID'] if 'StationGroupID' in i else None for i in data], #有些縣市沒有提供組站位ID
+            # '組站位ID': [i['StationGroupID'] if 'StationGroupID' in i else None for i in data], #有些縣市沒有提供組站位ID
             '站位ID': [i['StationID'] for i in data],
             '站牌名稱': [i['StationName']['Zh_tw'] for i in data],
-            '行經路線': [[j['RouteName']['Zh_tw'] for j in i['Stops']] for i in data],
-            'RouteID': [[j['RouteID'] for j in i['Stops']] for i in data],
+            '行經路線': [[j['RouteName']['Zh_tw'] for j in i['Stops']] for i in data]
+            # 'RouteID': [[j['RouteID'] for j in i['Stops']] for i in data]
         })
         return df
         
@@ -77,6 +101,7 @@ def getEstimatedTimeOfArrival(city, stationID):
         df = pd.DataFrame({
             '預計到站時間': [([j['EstimateTime'] for j in i['Estimates']] if 'Estimates' in i else None) for i in data], #有些縣市沒有提供組站位ID
             'RouteName': [i['RouteName']['Zh_tw'] for i in data],
+            'StopSequence': [i['StopSequence'] for i in data],
         }) 
         return df
         
