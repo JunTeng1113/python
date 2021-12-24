@@ -51,52 +51,60 @@ def main():
         result_dataframe = pd.DataFrame()
         for index, columns in destinations.iterrows():
             for _index, _columns in origins.iterrows():
-                sameRoute = set(value['RouteName']['Zh_tw'] for value in _columns['Stops']) & set(value['RouteName']['Zh_tw'] for value in columns['Stops']) #|  會經過所在地與目的地的路線
+                stops1 = set(value['RouteName']['Zh_tw'] for value in _columns['Stops']) #| Type: set, 停靠所在地車站的所有路線
+                stops2 = set(value['RouteName']['Zh_tw'] for value in columns['Stops']) #| Type: set, 停靠目的地車站的所有路線
+                sameRoute = stops1 & stops2 #| Type: set, 會經過所在地與目的地的路線
                 route = f'{_columns["StationID"]}, {columns["StationID"]}, {sameRoute}'
                 
-                if (sameRoute != set()) and (route not in routes):
-                    routes.add(route)
-                    # getSchedule(_columns["StationID"], _columns["StationName"]['Zh_tw'], columns["StationName"]['Zh_tw'])
-                    
-                    originsEstimate = getEstimatedTimeOfArrival(_columns["StationID"]) #| 所在地附近公車站的預計到站資料
-                    if len(originsEstimate.index) > 0:
-                        bus = pd.DataFrame()
-                        bus = originsEstimate[originsEstimate['RouteName'].apply(lambda x : x['Zh_tw']).isin(sameRoute)]
+                if (len(sameRoute) == 0): #| 所在地與目的地沒有相同的路線
+                    continue
 
-                        for _index, __columns in bus.iterrows():
-                            if (True if 'Estimates' not in __columns.index else (type(__columns['Estimates']) == float)):
-                                continue # 略過此步驟
-                                # _dict = {
-                                #     '公車路線': __columns['RouteName']['Zh_tw'], 
-                                #     '出發站': _columns["StationName"]['Zh_tw'], 
-                                #     '出發車站ID': _columns["StationID"], 
-                                #     '目標站': columns["StationName"]['Zh_tw'], 
-                                #     '目標車站ID': columns["StationID"]
-                                # }
-                                # new_row = pd.DataFrame(_dict, index=[0])
-                                # result_dataframe = result_dataframe.append(new_row, ignore_index=True)
+                if (route in routes): #| 路線重複
+                    print(route)
+                    continue 
 
-                            else:
-                                for _ in __columns['Estimates']:
+                routes.add(route)
+                # getSchedule(_columns["StationID"], _columns["StationName"]['Zh_tw'], columns["StationName"]['Zh_tw'])
+                
+                originsEstimate = getEstimatedTimeOfArrival(_columns["StationID"]) #| 所在地附近公車站的預計到站資料
+                if len(originsEstimate.index) > 0:
+                    bus = pd.DataFrame()
+                    bus = originsEstimate[originsEstimate['RouteName'].apply(lambda x : x['Zh_tw']).isin(sameRoute)]
 
-                                    t = time.localtime(time.time() + _["EstimateTime"])
-                                    current_time = time.strftime("%H:%M:%S", t)
-                                    _dict = {
-                                        '車牌號碼': _["PlateNumb"], 
-                                        '公車路線': __columns['RouteName']['Zh_tw'], 
-                                        '預計到站時間': current_time, 
-                                        # '預計到站時間': '{:g}'.format(_["EstimateTime"] / 60) + '分' if _["EstimateTime"] > 60  else f'{_["EstimateTime"]}秒', 
-                                        '出發站': _columns["StationName"]['Zh_tw'], 
-                                        # '出發車站ID': _columns["StationID"], 
-                                        '目標站': columns["StationName"]['Zh_tw'], 
-                                        # '目標車站ID': columns["StationID"]
-                                    }
+                    for _index, __columns in bus.iterrows():
+                        if (True if 'Estimates' not in __columns.index else (type(__columns['Estimates']) == float)):
+                            continue # 略過此步驟
+                            # _dict = {
+                            #     '公車路線': __columns['RouteName']['Zh_tw'], 
+                            #     '出發站': _columns["StationName"]['Zh_tw'], 
+                            #     '出發車站ID': _columns["StationID"], 
+                            #     '目標站': columns["StationName"]['Zh_tw'], 
+                            #     '目標車站ID': columns["StationID"]
+                            # }
+                            # new_row = pd.DataFrame(_dict, index=[0])
+                            # result_dataframe = result_dataframe.append(new_row, ignore_index=True)
 
-                                    new_row = pd.DataFrame(_dict, index=[0])
-                                    result_dataframe = result_dataframe.append(new_row, ignore_index=True)
-                    else:
-                        #| 列數為 0，表示該站位無任何車輛停靠
-                        pass
+                        else:
+                            for _ in __columns['Estimates']:
+
+                                t = time.localtime(time.time() + _["EstimateTime"])
+                                current_time = time.strftime("%H:%M:%S", t)
+                                _dict = {
+                                    '車牌號碼': _["PlateNumb"], 
+                                    '公車路線': __columns['RouteName']['Zh_tw'], 
+                                    '預計到站時間': current_time, 
+                                    # '預計到站時間': '{:g}'.format(_["EstimateTime"] / 60) + '分' if _["EstimateTime"] > 60  else f'{_["EstimateTime"]}秒', 
+                                    '出發站': _columns["StationName"]['Zh_tw'], 
+                                    # '出發車站ID': _columns["StationID"], 
+                                    '目標站': columns["StationName"]['Zh_tw'], 
+                                    # '目標車站ID': columns["StationID"]
+                                }
+
+                                new_row = pd.DataFrame(_dict, index=[0])
+                                result_dataframe = result_dataframe.append(new_row, ignore_index=True)
+                else:
+                    #| 列數為 0，表示該站位無任何車輛停靠
+                    pass
         # result_dataframe = result_dataframe.sort_values(['預計到站時間'])
         print(result_dataframe)
         try:
