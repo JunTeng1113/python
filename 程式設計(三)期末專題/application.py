@@ -2,6 +2,7 @@ from configparser import ConfigParser
 import json
 import pandas as pd
 
+import time
 pd.set_option('display.unicode.ambiguous_as_wide', True)
 pd.set_option('display.unicode.east_asian_width', True)
 from package.subpackage1 import *
@@ -44,6 +45,7 @@ def main():
         if response['status_code'] == 200:
             destinations = response['result']
 
+        print('Order By -')
         routes = set()
         result = list()
         result_dataframe = pd.DataFrame()
@@ -76,16 +78,20 @@ def main():
 
                             else:
                                 for _ in __columns['Estimates']:
+
+                                    t = time.localtime(time.time() + _["EstimateTime"])
+                                    current_time = time.strftime("%H:%M:%S", t)
                                     _dict = {
                                         '車牌號碼': _["PlateNumb"], 
                                         '公車路線': __columns['RouteName']['Zh_tw'], 
-                                        '出發站': _columns["StationName"]['Zh_tw'], 
-                                        '出發車站ID': _columns["StationID"], 
-                                        '預計到站時間': _["EstimateTime"], 
+                                        '預計到站時間': current_time, 
                                         # '預計到站時間': '{:g}'.format(_["EstimateTime"] / 60) + '分' if _["EstimateTime"] > 60  else f'{_["EstimateTime"]}秒', 
+                                        '出發站': _columns["StationName"]['Zh_tw'], 
+                                        # '出發車站ID': _columns["StationID"], 
                                         '目標站': columns["StationName"]['Zh_tw'], 
-                                        '目標車站ID': columns["StationID"]
+                                        # '目標車站ID': columns["StationID"]
                                     }
+
                                     new_row = pd.DataFrame(_dict, index=[0])
                                     result_dataframe = result_dataframe.append(new_row, ignore_index=True)
                     else:
@@ -100,7 +106,8 @@ def main():
             print(f'沒有權限，csv匯出失敗，{input_origins} to {input_destinations}.csv 正在使用中')
             
         print(('====================分隔線====================\n\n'))
-
+        time_count.time_end()
+        time_count.time_reset()
 
 
 
