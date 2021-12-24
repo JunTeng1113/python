@@ -5,8 +5,8 @@ import application
 '''-------------------------------------------------'''
 
 time_count.time_start()
-# analysis.getStationLocation()
-application.main()
+analysis.getStationLocation()
+# application.main()
 # show()
 
 

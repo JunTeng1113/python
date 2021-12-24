@@ -35,7 +35,7 @@ def getDemographicData():
 import time
 def getStationLocation():
     params= {
-        '$top': 1,
+        # '$top': 1,
         '$format': 'JSON'
     }
     response = p.request(f'Station/City/{CITY}', params)
@@ -59,7 +59,6 @@ def getStationLocation():
                         compound_code = response_['plus_code']['compound_code']
                         columns = {
                             'station_name': _stationName,
-                            'latlng': latlng, 
                             'lat': lat,
                             'lng': lng, 
                             'district': compound_code
@@ -68,8 +67,9 @@ def getStationLocation():
                         print(new_row)
                         df = df.append(new_row, ignore_index=True)
                     else:
-                        print(response_['status'])
+                        print(response_)
                         df.to_csv('csv/高雄市公車站牌.csv', encoding='utf_8_sig')
+                        quit()
                 except Exception as e:
                     print(e)
             
@@ -86,7 +86,7 @@ def getStationLocation():
 | 取得公車站牌數量以行政區劃分
 ===================='''
 def getStationCountGroupByDistrict():
-    df = pd.read_csv('csv/公車站位.csv')
+    df = pd.read_csv('csv/高雄市公車站牌.csv')
     df['district'] = df['district'].apply(lambda x: x[x.find('高雄市'):])
 
     df = df.groupby(['district'])['district'].count().reset_index(name='count')

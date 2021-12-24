@@ -70,7 +70,7 @@ def main():
                 if len(originsEstimate.index) > 0:
                     bus = pd.DataFrame()
                     bus = originsEstimate[originsEstimate['RouteName'].apply(lambda x : x['Zh_tw']).isin(sameRoute)]
-
+                    
                     for _index, __columns in bus.iterrows():
                         if (True if 'Estimates' not in __columns.index else (type(__columns['Estimates']) == float)):
                             continue # 略過此步驟
