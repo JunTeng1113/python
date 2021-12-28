@@ -5,11 +5,9 @@ from datetime import datetime
 from time import mktime
 import base64
 import json
-import googlemaps
 from requests import request
-from requests.models import Response
 
-class AuthPTX():
+class PTX():
     def __init__(self, app_id, app_key):
         self.app_id = app_id
         self.app_key = app_key
@@ -37,40 +35,19 @@ class AuthPTX():
         response = request('GET', url, params=params, headers=self.get_auth_header())
         return response
 
-class AuthGooglemap():
+class GoogleMap():
     def __init__(self, key):
         self.key = key
     
     def get_geocode(self, address):
-        try:
-            gmaps = googlemaps.Client(key=self.key)
-            geocode_result = gmaps.geocode(address)
-            location = {
-                'lat': geocode_result[0]['geometry']['location']['lat'],
-                'lng': geocode_result[0]['geometry']['location']['lng']
-            }
-            response = {
-                'status_code': 200,
-                'message': '',
-                'result': location
-            }
-
-        except googlemaps.exceptions.ApiError as e:
-            response = {
-                'status_code': 403,
-                'message': e,
-                'result': None
-            }
-        except Exception as e:
-            response = {
-                'status_code': 403,
-                'message': e,
-                'result': None
-            }
-            print(response)
-
-        finally:
-            return response
+        url = f'https://maps.googleapis.com/maps/api/geocode/json?'
+        params = {
+            'address': address, 
+            'key': self.key
+        }
+        response = request("GET", url, params=params)
+        data = json.loads(response.content)
+        return data
 
     def distancematrix(self, origins, destinations):
         url = f"https://maps.googleapis.com/maps/api/distancematrix/json?"
@@ -87,7 +64,8 @@ class AuthGooglemap():
     def get_geocode_uselatlng(self, latlng):
         url = f'https://maps.googleapis.com/maps/api/geocode/json?'
         params = {
-            'latlng': latlng, 
+            'latlng': latlng,  
+            'result_type': 'administrative_area_level_4', #四級行政區為村里
             'language': 'zh-TW',
             'key': self.key
         }
@@ -95,24 +73,9 @@ class AuthGooglemap():
         data = json.loads(response.content)
         return data
 
-class DATA():
+class MOI(): #內政部公開資料
     def __init__(self):
         pass
-
-    def get_auth_header(self):
-        xdate = format_date_time(mktime(datetime.now().timetuple()))
-        hashed = hmac.new(self.app_key.encode('utf8'), ('x-date: ' + xdate).encode('utf8'), sha1)
-        signature = base64.b64encode(hashed.digest()).decode()
-
-        authorization = 'hmac username="' + self.app_id + '", ' + \
-                        'algorithm="hmac-sha1", ' + \
-                        'headers="x-date", ' + \
-                        'signature="' + signature + '"'
-        return {
-            'Authorization': authorization,
-            'x-date': format_date_time(mktime(datetime.now().timetuple())),
-            'Accept - Encoding': 'gzip'
-        }
 
     def request(self):
         url = f'https://od.moi.gov.tw/api/v1/rest/datastore/301000000A-000605-059'
